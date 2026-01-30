@@ -1,37 +1,26 @@
 pipeline {
     agent any
-
     environment {
-        VENV_DIR = "venv"
+        ENV_DIR = 'venv'
     }
-
     stages {
-        stage('Checkout') {
+        stage('Setup Python Environment') {
             steps {
-                checkout scm
+                sh '''
+                    python3 -m venv ${ENV_DIR}
+                    . ${ENV_DIR}/bin/activate
+                    pip install --upgrade pip
+                    pip install -r flask-app/requirements.txt
+                '''
             }
         }
-
-        stage('Set up Python') {
+        stage('Run Flask App') {
             steps {
-                sh 'python3 -m venv ${VENV_DIR} || python -m venv ${VENV_DIR}'
-                sh '. ${VENV_DIR}/bin/activate && pip install --upgrade pip'
-            }
-        }
-
-        stage('Install dependencies') {
-            steps {
-                sh '. ${VENV_DIR}/bin/activate && pip install -r requirements.txt'
-            }
-        }
-
-        stage('Restart Flask app (pm2)') {
-            steps {
-                // assumes pm2 ecosystem config or named process 'flask-app'
-                sh 'pm2 start \"gunicorn -b 0.0.0.0:5000 app:app\" --name flask-app || pm2 restart flask-app'
-                sh 'pm2 save'
+                sh '''
+                    . ${ENV_DIR}/bin/activate
+                    nohup python flask-app/app.py > flask.log 2>&1 &
+                '''
             }
         }
     }
 }
-
