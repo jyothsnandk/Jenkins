@@ -10,24 +10,25 @@ pipeline {
 
         stage('Set up Node') {
             steps {
-                // Assumes Node.js is installed on the Jenkins/EC2 host
                 sh 'node -v && npm -v'
             }
         }
 
         stage('Install dependencies') {
             steps {
-                sh 'npm install'
+                dir('express-app') {
+                    sh 'npm install'
+                }
             }
         }
 
         stage('Restart Express app (pm2)') {
             steps {
-                // assumes process named 'express-app'
-                sh 'pm2 start \"npm start\" --name express-app || pm2 restart express-app'
-                sh 'pm2 save'
+                dir('express-app') {
+                    sh 'pm2 start "npm start" --name express-app || pm2 restart express-app'
+                    sh 'pm2 save'
+                }
             }
         }
     }
 }
-
